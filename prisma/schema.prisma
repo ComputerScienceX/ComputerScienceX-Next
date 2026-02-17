@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Post {
+  id            Int            @id @default(autoincrement())
+  title         String
+  slug          String         @unique
+  description   String
+  content       String         @db.LongText
+  coverImageUrl String?
+  authorName    String         @default("ComputerScienceX")
+  publishedAt   DateTime       @default(now())
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  categories    PostCategory[]
+  views         ViewEvent[]
+  likes         Like[]
+
+  @@index([publishedAt])
+}
+
+model Category {
+  id        Int            @id @default(autoincrement())
+  name      String         @unique
+  slug      String         @unique
+  createdAt DateTime       @default(now())
+  posts     PostCategory[]
+}
+
+model PostCategory {
+  postId     Int
+  categoryId Int
+  assignedAt DateTime @default(now())
+  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([postId, categoryId])
+  @@index([categoryId])
+}
+
+model ViewEvent {
+  id         Int      @id @default(autoincrement())
+  postId     Int?
+  path       String
+  ip         String
+  fingerprint String
+  userAgent  String?  @db.Text
+  browser    String?
+  os         String?
+  deviceType String?
+  country    String?
+  region     String?
+  city       String?
+  latitude   Float?
+  longitude  Float?
+  isBot      Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  post       Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt])
+  @@index([createdAt])
+  @@index([isBot, createdAt])
+  @@index([fingerprint, createdAt])
+}
+
+model Like {
+  id         Int      @id @default(autoincrement())
+  postId     Int
+  ip         String
+  fingerprint String
+  userAgent  String?  @db.Text
+  browser    String?
+  os         String?
+  deviceType String?
+  country    String?
+  region     String?
+  city       String?
+  createdAt  DateTime @default(now())
+  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, fingerprint])
+  @@index([postId, createdAt])
+}
