@@ -11,6 +11,21 @@ type UploadedImage = {
   url: string;
 };
 
+type EditablePost = {
+  id: number;
+  title: string;
+  description: string;
+  content: string;
+  coverImageUrl: string | null;
+  categories: string[];
+};
+
+type CreatePostFormProps = {
+  adminBasePath: string;
+  mode?: "create" | "edit";
+  initialPost?: EditablePost;
+};
+
 function normalizeCategoryInput(raw: string) {
   return raw
     .split(",")
@@ -18,14 +33,18 @@ function normalizeCategoryInput(raw: string) {
     .filter(Boolean);
 }
 
-export default function CreatePostForm({ adminBasePath }: { adminBasePath: string }) {
+export default function CreatePostForm({
+  adminBasePath,
+  mode = "create",
+  initialPost,
+}: CreatePostFormProps) {
   const router = useRouter();
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [coverImageUrl, setCoverImageUrl] = useState("");
+  const [title, setTitle] = useState(initialPost?.title ?? "");
+  const [description, setDescription] = useState(initialPost?.description ?? "");
+  const [coverImageUrl, setCoverImageUrl] = useState(initialPost?.coverImageUrl ?? "");
   const [categoryInput, setCategoryInput] = useState("");
-  const [categories, setCategories] = useState<string[]>([]);
-  const [content, setContent] = useState("");
+  const [categories, setCategories] = useState<string[]>(initialPost?.categories ?? []);
+  const [content, setContent] = useState(initialPost?.content ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,28 +109,53 @@ export default function CreatePostForm({ adminBasePath }: { adminBasePath: strin
     setError(null);
 
     try {
-      const response = await fetch("/api/admin/posts", {
-        method: "POST",
+      const categoriesToSubmit = Array.from(
+        new Set([...categories, ...normalizeCategoryInput(categoryInput)])
+      ).slice(0, 3);
+      const trimmedDescription = description.trim();
+      const trimmedTitle = title.trim();
+      const trimmedContent = content.trim();
+
+      if (trimmedDescription.length < 20) {
+        throw new Error("description: Must be at least 20 characters.");
+      }
+
+      if (!categoriesToSubmit.length) {
+        throw new Error("categories: Add at least 1 category.");
+      }
+
+      const endpoint =
+        mode === "edit" && initialPost ? `/api/admin/posts/${initialPost.id}` : "/api/admin/posts";
+      const method = mode === "edit" ? "PATCH" : "POST";
+
+      const response = await fetch(endpoint, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title,
-          description,
-          content,
+          title: trimmedTitle,
+          description: trimmedDescription,
+          content: trimmedContent,
           coverImageUrl,
-          categories,
+          categories: categoriesToSubmit,
         }),
       });
       const body = (await response.json()) as {
         ok?: boolean;
         error?: string;
+        details?: { field: string; message: string }[];
         post?: { slug: string };
       };
 
       if (!response.ok || !body.ok || !body.post) {
-        throw new Error(body.error || "Unable to create post.");
+        const detailMessage =
+          body.details?.length
+            ? body.details.map((item) => `${item.field}: ${item.message}`).join(" | ")
+            : null;
+        throw new Error(detailMessage || body.error || "Unable to create post.");
       }
 
-      router.push(`${adminBasePath}?created=${body.post.slug}`);
+      const param = mode === "edit" ? "updated" : "created";
+      router.push(`${adminBasePath}?${param}=${body.post.slug}`);
       router.refresh();
     } catch (submitError) {
       const message = submitError instanceof Error ? submitError.message : "Unable to create post.";
@@ -143,6 +187,7 @@ export default function CreatePostForm({ adminBasePath }: { adminBasePath: strin
           onChange={(event) => setDescription(event.target.value)}
           placeholder="One-paragraph summary that appears in cards and metadata."
           required
+          minLength={20}
           maxLength={240}
           className="min-h-24"
         />
@@ -235,7 +280,7 @@ export default function CreatePostForm({ adminBasePath }: { adminBasePath: strin
 
       <div className="flex items-center gap-3">
         <Button type="submit" disabled={submitting || uploading}>
-          {submitting ? "Publishing..." : "Publish Post"}
+          {submitting ? (mode === "edit" ? "Saving..." : "Publishing...") : mode === "edit" ? "Save Changes" : "Publish Post"}
         </Button>
         {uploading ? <span className="text-sm text-muted-foreground">Uploading images...</span> : null}
       </div>
