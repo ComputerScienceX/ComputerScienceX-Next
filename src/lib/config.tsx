@@ -11,7 +11,7 @@ export const siteConfig = {
   url: process.env.NEXT_PUBLIC_APP_URL || "https://computersciencex.com",
   keywords: ["ComputerScienceX", "Personal Blog", "Software Engineering", "Next.js", "Programming"],
   links: {
-    email: "support@acme.ai",
+    email: "email",
     twitter: "https://twitter.com/magicuidesign",
     discord: "https://discord.gg/87p2vpsat5",
     github: "https://github.com/magicuidesign/magicui",

@@ -60,6 +60,16 @@ export type AdminPostFormData = {
   categories: string[];
 };
 
+export type CategoryWithPostCount = Prisma.CategoryGetPayload<{
+  include: {
+    _count: {
+      select: {
+        posts: true;
+      };
+    };
+  };
+}>;
+
 export async function markdownToHTML(markdown: string) {
   const transformed = await unified()
     .use(remarkParse)
@@ -213,7 +223,7 @@ export async function getPostsByCategorySlug(categorySlug: string): Promise<Post
   return entries.map(toPostCard);
 }
 
-export async function getCategories() {
+export async function getCategories(): Promise<CategoryWithPostCount[]> {
   return prisma.category.findMany({
     orderBy: {
       name: "asc",

@@ -1,7 +1,7 @@
 import SiteFooter from "@/components/site-footer";
 import SiteHeader from "@/components/site-header";
 import { Badge } from "@/components/ui/badge";
-import { getCategories } from "@/lib/blog";
+import { getCategories, type CategoryWithPostCount } from "@/lib/blog";
 import { constructMetadata } from "@/lib/utils";
 import Link from "next/link";
 
@@ -26,7 +26,7 @@ export default async function CategoriesPage() {
 
         <div className="mt-8 flex flex-wrap gap-3">
           {categories.length ? (
-            categories.map((category) => (
+            categories.map((category: CategoryWithPostCount) => (
               <Badge key={category.id} variant="outline" className="rounded-full px-3 py-1">
                 <Link href={`/categories/${category.slug}`}>
                   {category.name} ({category._count.posts})

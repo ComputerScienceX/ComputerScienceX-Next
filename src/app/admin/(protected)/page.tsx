@@ -16,11 +16,12 @@ export default async function AdminDashboardPage({
   const params = await searchParams;
   const data = await getAdminDashboardData();
   const adminBasePath = getPublicAdminPath();
+  type LatestView = Awaited<ReturnType<typeof getAdminDashboardData>>["latestViews"][number];
 
   const mapPoints = data.latestViews
-    .filter((event) => event.latitude !== null && event.longitude !== null)
+    .filter((event: LatestView) => event.latitude !== null && event.longitude !== null)
     .slice(0, 100)
-    .map((event) => ({
+    .map((event: LatestView) => ({
       id: event.id,
       latitude: event.latitude as number,
       longitude: event.longitude as number,
