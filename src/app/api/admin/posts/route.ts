@@ -21,21 +21,7 @@ export async function POST(request: Request) {
 
   try {
     const json = await request.json();
-    const result = createPostSchema.safeParse(json);
-    if (!result.success) {
-      const details = result.error.issues.map((issue) => ({
-        field: issue.path.join(".") || "body",
-        message: issue.message,
-      }));
-      return NextResponse.json(
-        {
-          error: "Invalid request body.",
-          details,
-        },
-        { status: 400 }
-      );
-    }
-    parsedBody = result.data;
+    parsedBody = createPostSchema.parse(json);
   } catch {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }

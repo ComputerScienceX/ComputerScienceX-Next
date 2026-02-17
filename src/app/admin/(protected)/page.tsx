@@ -1,5 +1,4 @@
 import GeoMap from "@/components/admin/geo-map";
-import PostRowActions from "@/components/admin/post-row-actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getPublicAdminPath } from "@/lib/admin-path";
@@ -11,11 +10,10 @@ export const dynamic = "force-dynamic";
 export default async function AdminDashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ created?: string; updated?: string; deleted?: string }>;
+  searchParams: Promise<{ created?: string }>;
 }) {
   const params = await searchParams;
   const data = await getAdminDashboardData();
-  const adminBasePath = getPublicAdminPath();
 
   const mapPoints = data.latestViews
     .filter((event) => event.latitude !== null && event.longitude !== null)
@@ -34,16 +32,6 @@ export default async function AdminDashboardPage({
       {params.created ? (
         <div className="rounded-md border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
           Post published: <Link href={`/blog/${params.created}`} className="underline">{params.created}</Link>
-        </div>
-      ) : null}
-      {params.updated ? (
-        <div className="rounded-md border border-blue-300 bg-blue-50 px-4 py-3 text-sm text-blue-900">
-          Post updated: <Link href={`/blog/${params.updated}`} className="underline">{params.updated}</Link>
-        </div>
-      ) : null}
-      {params.deleted ? (
-        <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Post deleted: <span className="font-mono">{params.deleted}</span>
         </div>
       ) : null}
 
@@ -76,7 +64,6 @@ export default async function AdminDashboardPage({
                     <th className="py-2 pr-4">Post</th>
                     <th className="py-2 pr-4">Views</th>
                     <th className="py-2">Likes</th>
-                    <th className="py-2 pl-4">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -89,19 +76,11 @@ export default async function AdminDashboardPage({
                       </td>
                       <td className="py-2 pr-4">{post.views.toLocaleString()}</td>
                       <td className="py-2">{post.likes.toLocaleString()}</td>
-                      <td className="py-2 pl-4">
-                        <PostRowActions
-                          postId={post.id}
-                          postSlug={post.slug}
-                          postTitle={post.title}
-                          adminBasePath={adminBasePath}
-                        />
-                      </td>
                     </tr>
                   ))}
                   {!data.topPosts.length ? (
                     <tr>
-                      <td colSpan={4} className="py-4 text-muted-foreground">
+                      <td colSpan={3} className="py-4 text-muted-foreground">
                         No posts yet.
                       </td>
                     </tr>

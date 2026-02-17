@@ -50,16 +50,6 @@ export type PostDetails = PostCard & {
   hasLiked: boolean;
 };
 
-export type AdminPostFormData = {
-  id: number;
-  title: string;
-  slug: string;
-  description: string;
-  content: string;
-  coverImageUrl: string | null;
-  categories: string[];
-};
-
 export async function markdownToHTML(markdown: string) {
   const transformed = await unified()
     .use(remarkParse)
@@ -94,45 +84,6 @@ function toPostCard(post: PostCardWithRelations): PostCard {
     views: post._count.views,
     likes: post._count.likes,
   };
-}
-
-function normalizeCategoryEntries(categories: string[]) {
-  return Array.from(
-    categories
-      .map((category) => category.trim())
-      .filter(Boolean)
-      .map((category) => category.slice(0, 40))
-      .reduce((map, categoryName) => {
-        const categorySlug = slugify(categoryName);
-        if (!categorySlug) return map;
-        if (!map.has(categorySlug)) {
-          map.set(categorySlug, categoryName);
-        }
-        return map;
-      }, new Map<string, string>())
-      .entries()
-  );
-}
-
-async function generateUniquePostSlug(title: string, currentPostId?: number) {
-  const baseSlug = slugify(title) || `post-${Date.now()}`;
-  const similarSlugs = await prisma.post.findMany({
-    where: {
-      slug: {
-        startsWith: baseSlug,
-      },
-    },
-    select: {
-      id: true,
-      slug: true,
-    },
-  });
-
-  const reservedSlugs = similarSlugs
-    .filter((entry) => (currentPostId ? entry.id !== currentPostId : true))
-    .map((entry) => entry.slug);
-
-  return ensureUniqueSlug(baseSlug, reservedSlugs);
 }
 
 export async function getBlogPosts(): Promise<PostCard[]> {
@@ -247,13 +198,41 @@ export async function createPost(input: {
     throw new Error("A post must include between 1 and 3 categories.");
   }
 
-  const categoryEntries = normalizeCategoryEntries(input.categories);
+  const categoryEntries = Array.from(
+    input.categories
+      .map((category) => category.trim())
+      .filter(Boolean)
+      .map((category) => category.slice(0, 40))
+      .reduce((map, categoryName) => {
+        const categorySlug = slugify(categoryName);
+        if (!categorySlug) return map;
+        if (!map.has(categorySlug)) {
+          map.set(categorySlug, categoryName);
+        }
+        return map;
+      }, new Map<string, string>())
+      .entries()
+  );
 
   if (categoryEntries.length === 0 || categoryEntries.length > 3) {
     throw new Error("A post must include between 1 and 3 categories.");
   }
 
-  const finalSlug = await generateUniquePostSlug(title);
+  const baseSlug = slugify(title) || `post-${Date.now()}`;
+  const similarSlugs = await prisma.post.findMany({
+    where: {
+      slug: {
+        startsWith: baseSlug,
+      },
+    },
+    select: {
+      slug: true,
+    },
+  });
+  const finalSlug = ensureUniqueSlug(
+    baseSlug,
+    similarSlugs.map((entry) => entry.slug)
+  );
 
   const post = await prisma.post.create({
     data: {
@@ -286,131 +265,6 @@ export async function createPost(input: {
   });
 
   return post;
-}
-
-export async function getAdminPostById(id: number): Promise<AdminPostFormData | null> {
-  const post = await prisma.post.findUnique({
-    where: { id },
-    include: {
-      categories: {
-        include: {
-          category: true,
-        },
-      },
-    },
-  });
-
-  if (!post) return null;
-
-  return {
-    id: post.id,
-    title: post.title,
-    slug: post.slug,
-    description: post.description,
-    content: post.content,
-    coverImageUrl: post.coverImageUrl,
-    categories: post.categories.map((item) => item.category.name),
-  };
-}
-
-export async function updatePost(input: {
-  id: number;
-  title: string;
-  description: string;
-  content: string;
-  coverImageUrl?: string;
-  categories: string[];
-}) {
-  const title = input.title.trim();
-  const description = input.description.trim();
-  const content = input.content.trim();
-
-  if (!title || !description || !content) {
-    throw new Error("Title, description, and content are required.");
-  }
-
-  if (input.categories.length === 0 || input.categories.length > 3) {
-    throw new Error("A post must include between 1 and 3 categories.");
-  }
-
-  const categoryEntries = normalizeCategoryEntries(input.categories);
-  if (categoryEntries.length === 0 || categoryEntries.length > 3) {
-    throw new Error("A post must include between 1 and 3 categories.");
-  }
-
-  const finalSlug = await generateUniquePostSlug(title, input.id);
-
-  try {
-    const updated = await prisma.$transaction(async (tx) => {
-      await tx.postCategory.deleteMany({
-        where: { postId: input.id },
-      });
-
-      return tx.post.update({
-        where: { id: input.id },
-        data: {
-          title,
-          slug: finalSlug,
-          description,
-          content,
-          coverImageUrl: input.coverImageUrl?.trim() || null,
-          categories: {
-            create: categoryEntries.map(([categorySlug, categoryName]) => ({
-              category: {
-                connectOrCreate: {
-                  where: { slug: categorySlug },
-                  create: {
-                    name: categoryName,
-                    slug: categorySlug,
-                  },
-                },
-              },
-            })),
-          },
-        },
-        select: {
-          id: true,
-          slug: true,
-          title: true,
-        },
-      });
-    });
-
-    return updated;
-  } catch (error: unknown) {
-    if (
-      error &&
-      typeof error === "object" &&
-      "code" in error &&
-      (error as { code?: string }).code === "P2025"
-    ) {
-      throw new Error("Post not found.");
-    }
-    throw error;
-  }
-}
-
-export async function deletePost(id: number) {
-  try {
-    return await prisma.post.delete({
-      where: { id },
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-      },
-    });
-  } catch (error: unknown) {
-    if (
-      error &&
-      typeof error === "object" &&
-      "code" in error &&
-      (error as { code?: string }).code === "P2025"
-    ) {
-      throw new Error("Post not found.");
-    }
-    throw error;
-  }
 }
 
 export async function recordPostView(slug: string, requestHeaders: Headers) {
