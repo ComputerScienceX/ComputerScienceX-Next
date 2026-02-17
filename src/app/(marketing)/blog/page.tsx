@@ -1,7 +1,7 @@
 import BlogCard from "@/components/blog-card";
 import SiteFooter from "@/components/site-footer";
 import SiteHeader from "@/components/site-header";
-import { getBlogPosts } from "@/lib/blog";
+import { getBlogPosts, type PostCard } from "@/lib/blog";
 import { siteConfig } from "@/lib/config";
 import { constructMetadata } from "@/lib/utils";
 
@@ -25,7 +25,7 @@ export default async function Blog() {
         </div>
         <div className="grid grid-cols-1 gap-6 pb-8 md:grid-cols-2 lg:grid-cols-3">
           {allPosts.length ? (
-            allPosts.map((data) => <BlogCard key={data.id} data={data} />)
+            allPosts.map((data: PostCard) => <BlogCard key={data.id} data={data} />)
           ) : (
             <p className="text-muted-foreground">No posts published yet.</p>
           )}

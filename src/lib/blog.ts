@@ -86,7 +86,7 @@ function toPostCard(post: PostCardWithRelations): PostCard {
   };
 }
 
-export async function getBlogPosts() {
+export async function getBlogPosts(): Promise<PostCard[]> {
   const posts = await prisma.post.findMany({
     include: postCardInclude,
     orderBy: {
@@ -97,7 +97,7 @@ export async function getBlogPosts() {
   return posts.map(toPostCard);
 }
 
-export async function getLatestPosts(limit = 6) {
+export async function getLatestPosts(limit = 6): Promise<PostCard[]> {
   const posts = await prisma.post.findMany({
     include: postCardInclude,
     orderBy: {
@@ -144,7 +144,7 @@ export async function getPostBySlug(slug: string, requestHeaders?: Headers): Pro
   };
 }
 
-export async function getPostsByCategorySlug(categorySlug: string) {
+export async function getPostsByCategorySlug(categorySlug: string): Promise<PostCard[]> {
   const entries = await prisma.post.findMany({
     where: {
       categories: {
