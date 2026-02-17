@@ -27,7 +27,10 @@ export default async function CategoryPage({
 }) {
   const { slug } = await params;
   const [posts, categories] = await Promise.all([getPostsByCategorySlug(slug), getCategories()]);
-  const category = categories.find((item) => item.slug === slug);
+const category = categories.find(
+  (item: Awaited<ReturnType<typeof getCategories>>[number]) => item.slug === slug
+);
+
 
   if (!category) {
     notFound();
