@@ -1,6 +1,7 @@
 import { Icons } from "@/components/icons";
 import { FaTwitter } from "react-icons/fa";
 import { FaYoutube } from "react-icons/fa6";
+import { FaGithub, FaLinkedin } from "react-icons/fa6";
 import { RiInstagramFill } from "react-icons/ri";
 
 export const BLUR_FADE_DELAY = 0.15;
@@ -11,12 +12,27 @@ export const siteConfig = {
   url: process.env.NEXT_PUBLIC_APP_URL || "https://computersciencex.com",
   keywords: ["ComputerScienceX", "Personal Blog", "Software Engineering", "Next.js", "Programming"],
   links: {
-    email: "support@acme.ai",
+    email: "email",
     twitter: "https://twitter.com/magicuidesign",
     discord: "https://discord.gg/87p2vpsat5",
     github: "https://github.com/magicuidesign/magicui",
     instagram: "https://instagram.com/magicuidesign/",
   },
+  socialBar: [
+
+
+    {
+      href: "https://github.com/computersciencex",
+      label: "GitHub",
+      icon: <FaGithub />,
+    },
+
+    {
+      href: "https://youtube.com/playlist?list=PLpoGaDETRPIZFm_UAEwl97aNv0Of5vN0n&si=2BRHVH9jyMir4_Bhm",
+      label: "YouTube",
+      icon: <FaYoutube />,
+    },
+  ],
   header: [
     {
       trigger: "Features",
