@@ -1,7 +1,7 @@
 import BlogCard from "@/components/blog-card";
 import SiteFooter from "@/components/site-footer";
 import SiteHeader from "@/components/site-header";
-import { getCategories, getPostsByCategorySlug } from "@/lib/blog";
+import { getCategories, getPostsByCategorySlug, type PostCard } from "@/lib/blog";
 import { constructMetadata } from "@/lib/utils";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -27,10 +27,9 @@ export default async function CategoryPage({
 }) {
   const { slug } = await params;
   const [posts, categories] = await Promise.all([getPostsByCategorySlug(slug), getCategories()]);
-const category = categories.find(
-  (item: Awaited<ReturnType<typeof getCategories>>[number]) => item.slug === slug
-);
-
+  const category = categories.find(
+    (item: Awaited<ReturnType<typeof getCategories>>[number]) => item.slug === slug
+  );
 
   if (!category) {
     notFound();
@@ -46,7 +45,7 @@ const category = categories.find(
         </p>
 
         <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {posts.map((post) => (
+          {posts.map((post: PostCard) => (
             <BlogCard key={post.id} data={post} />
           ))}
         </div>
